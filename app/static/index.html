@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClipTube Studio • Baixe Cortes do YouTube em Alta Qualidade</title>
+  <meta name="description" content="Cole o link do seu vídeo do YouTube, defina o minuto inicial e final e baixe apenas o trecho desejado em alta definição MP4 com áudio sincronizado.">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="badge-pill">
+        <span class="badge-dot"></span>
+        FFmpeg Integrado • Download Preciso por Trecho
+      </div>
+      <h1 class="app-title">ClipTube Studio</h1>
+      <p class="app-subtitle">
+        Corte e baixe trechos exatos de vídeos do YouTube em MP4 com a mais alta qualidade disponível, sem precisar baixar o vídeo inteiro.
+      </p>
+    </header>
+
+    <!-- Step 1: Input URL -->
+    <section class="glass-card input-section" aria-label="Inserir Link do YouTube">
+      <div class="url-form">
+        <div class="input-wrapper">
+          <span class="input-icon">🔗</span>
+          <input 
+            type="text" 
+            id="url-input" 
+            class="url-input" 
+            placeholder="Cole o link do vídeo do YouTube (ex: https://www.youtube.com/watch?v=... ou Shorts)"
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button type="button" id="clear-url-btn" class="clear-btn" title="Limpar campo">✕</button>
+        </div>
+        <button type="button" id="paste-btn" class="btn-secondary" title="Colar da área de transferência">
+          📋 Colar
+        </button>
+        <button type="button" id="load-video-btn" class="btn-primary">
+          <span id="load-btn-text">Carregar Vídeo</span>
+          <span id="load-spinner" class="spinner"></span>
+        </button>
+      </div>
+
+      <div class="quick-hints">
+        <span>💡 Dica: Você também pode testar com um exemplo:</span>
+        <span id="sample-url-btn" class="hint-link">Vídeo 4K de Exemplo (Blender)</span>
+      </div>
+    </section>
+
+    <!-- Step 2: Studio Workspace (Interactive Player + Cutting Controls) -->
+    <section id="studio-section" class="studio-section" aria-label="Estúdio de Edição de Trecho">
+      <!-- Player & Info Card -->
+      <div class="glass-card player-card">
+        <div class="video-container" id="player-container">
+          <!-- YouTube IFrame will be injected here -->
+          <div id="yt-player"></div>
+        </div>
+        <div class="video-meta">
+          <h2 id="video-title" class="video-title">Título do Vídeo</h2>
+          <div class="video-details">
+            <span id="video-channel" class="channel-name">Canal</span>
+            <span>•</span>
+            <span id="video-duration">Duração: 00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls & Trimming Card -->
+      <div class="glass-card editor-card">
+        <div>
+          <!-- Visual Timeline Highlight -->
+          <div class="timeline-visual">
+            <div class="section-label">Linha do Tempo Selecionada</div>
+            <div class="timeline-track-wrapper">
+              <div id="timeline-highlight" class="timeline-highlight"></div>
+            </div>
+            <div class="duration-badge">
+              <span id="timeline-start-label">Início: 00:00</span>
+              <span id="clip-duration-tag" class="clip-duration-tag">Duração do corte: 00:00</span>
+              <span id="timeline-end-label">Fim: 00:00</span>
+            </div>
+          </div>
+
+          <!-- Time Inputs Grid -->
+          <div class="time-inputs-grid">
+            <!-- Start Time Field -->
+            <div class="time-field-box">
+              <div class="time-field-header">
+                <span class="time-field-label">Minuto Inicial</span>
+                <button type="button" id="grab-start-btn" class="btn-grab-time" title="Usar tempo onde o vídeo está pausado">
+                  ⏱️ Tempo Atual
+                </button>
+              </div>
+              <div class="time-input-group">
+                <input 
+                  type="text" 
+                  id="start-time-input" 
+                  class="time-input" 
+                  value="00:00" 
+                  placeholder="00:00"
+                  maxlength="8"
+                >
+              </div>
+            </div>
+
+            <!-- End Time Field -->
+            <div class="time-field-box">
+              <div class="time-field-header">
+                <span class="time-field-label">Minuto Final</span>
+                <button type="button" id="grab-end-btn" class="btn-grab-time" title="Usar tempo onde o vídeo está pausado">
+                  ⏱️ Tempo Atual
+                </button>
+              </div>
+              <div class="time-input-group">
+                <input 
+                  type="text" 
+                  id="end-time-input" 
+                  class="time-input" 
+                  value="00:30" 
+                  placeholder="00:30"
+                  maxlength="8"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Quality Selection -->
+          <div class="options-box">
+            <div class="section-label">Qualidade do Vídeo</div>
+            <div class="quality-pills" id="quality-selector">
+              <div class="quality-pill active" data-quality="best">💎 Melhor Disponível</div>
+              <div class="quality-pill" data-quality="1080p">🎬 1080p Full HD</div>
+              <div class="quality-pill" data-quality="720p">📺 720p HD</div>
+              <div class="quality-pill" data-quality="480p">⚡ 480p SD</div>
+              <div class="quality-pill" data-quality="audio">🎵 Apenas Áudio (MP3)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download Action Button -->
+        <button type="button" id="start-download-btn" class="btn-primary btn-download-clip">
+          <span id="dl-btn-icon">✂️</span>
+          <span id="dl-btn-text">Cortar e Baixar em MP4</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Step 3: Real-Time Download Progress Card -->
+    <section id="progress-card" class="progress-card" aria-label="Progresso do Download">
+      <div class="progress-header">
+        <div class="progress-title">
+          <span class="spinner" id="active-spinner" style="display: inline-block;"></span>
+          <span id="progress-status-title">Baixando e Processando o Trecho...</span>
+        </div>
+        <div id="progress-percent" class="progress-pct">0%</div>
+      </div>
+
+      <div class="progress-bar-container">
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+      </div>
+
+      <div class="progress-meta">
+        <span id="progress-stage-text" class="progress-stage">Conectando ao YouTube...</span>
+        <div>
+          <span id="progress-speed"></span>
+          <span id="progress-eta" style="margin-left: 0.5rem; color: var(--text-muted);"></span>
+        </div>
+      </div>
+
+      <!-- Success Action Box (Appears when completed) -->
+      <div id="success-box" class="success-box">
+        <div style="color: var(--success); font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>✅</span> Corte finalizado com sucesso em alta qualidade!
+        </div>
+
+        <!-- In-app video preview of the trimmed clip -->
+        <div class="downloaded-preview" id="preview-wrapper">
+          <video id="preview-video-player" controls preload="metadata"></video>
+        </div>
+
+        <div class="success-actions">
+          <a id="download-file-btn" class="btn-success-dl" href="#" download>
+            ⬇️ Baixar Arquivo MP4 (<span id="download-filesize">0 MB</span>)
+          </a>
+          <button type="button" id="cut-another-btn" class="btn-secondary">
+            ✂️ Fazer Outro Corte Deste Vídeo
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: Session History -->
+    <section class="history-section" id="history-section">
+      <div class="section-label">Cortes Recentes Desta Sessão</div>
+      <div id="history-grid" class="history-grid">
+        <p style="color: var(--text-muted); font-size: 0.85rem;" id="no-history-msg">Nenhum corte feito ainda. Cole um link acima para começar!</p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <!-- Main Script -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
